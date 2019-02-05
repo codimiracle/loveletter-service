@@ -16,6 +16,7 @@ import org.apache.commons.codec.digest.Crypt;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Service;
@@ -104,25 +105,20 @@ public class SpiderService {
                 String[] rawThemeData = null;
                 Map<String, Theme> map = new HashMap<>();
                 for (CrawledData crawlData : crawledDataList) {
-                    Theme theme = map.get(crawlData.theme);
+                    Theme theme = map.get(crawlData.title);
                     if (Objects.isNull(theme)) {
                         theme = new Theme();
-                        theme.setTitle(crawlData.theme);
-                        rawThemeData = crawlData.theme.split("\\|");
+                        BeanUtils.copyProperties(crawlData, theme);
+                        rawThemeData = crawlData.title.split("\\|");
                         theme.setEpisode(rawThemeData[0]);
-                        theme.setSubject(crawlData.subject);
-                        theme.setUrl(crawlData.url);
-                        theme.setPublishTime(crawlData.getPublishTime());
-                        theme.setId(getThemeId(crawlData.theme, crawlData.getPublishTime()));
+                        theme.setId(getThemeId(crawlData.title, crawlData.getPublishTime()));
                         theme.setRunId(runId);
-                        map.put(crawlData.theme, theme);
-                        log.debug("read theme data of crawled data: [{}]", theme);
+                        map.put(crawlData.title, theme);
+                        log.debug("read title data of crawled data: [{}]", theme);
                         themeRepository.insert(theme);
                     }
                     Letter letter = new Letter();
-                    letter.setBody(crawlData.body);
-                    letter.setReceiver(crawlData.receiver);
-                    letter.setSender(crawlData.sender);
+                    BeanUtils.copyProperties(crawlData, letter);
                     letter.setTheme(theme);
                     letter.setRunId(runId);
                     letter.setId(getLetterId(theme.getId(), crawlData.letterIndex));
@@ -133,6 +129,14 @@ public class SpiderService {
                 log.error("can not load the data of crawled data by runId [{}], it throws [{}]", runId, e);
                 throw e;
             }
+        }
+    }
+    @Async
+    @Transactional(rollbackFor = IOException.class)
+    public void analysisCrawledData(String runId) {
+        CrawlingResult result = crawlingResultRepository.findByRunId(runId);
+        if (Objects.nonNull(result)) {
+            //TODO: analysis word frequency and put it to database.
         }
     }
 
@@ -149,25 +153,23 @@ public class SpiderService {
             result.setStatus(CrawlingResult.RUNNING);
             crawlingResultRepository.updateIdempotently(result, CrawlingResult.CREATED);
             while (process.isAlive()) {
-                Thread.sleep(2000);
+                Thread.sleep(3000);
             }
             result.setExitValue(process.exitValue());
             if (result.getExitValue() == 0) {
                 result.setStatus(CrawlingResult.FINISHED);
                 loadCrawledData(runId);
+                analysisCrawledData(runId);
             } else {
                 result.setStatus(CrawlingResult.SPIDER_ERROR);
             }
             crawlingResultRepository.updateIdempotently(result, CrawlingResult.RUNNING);
             return AsyncResult.forValue(result);
         } catch (Exception e) {
-            result.setStatus(CrawlingResult.SYSTEM_ERROR);
             log.error("spider service terminated:", e);
-            if (e instanceof IOException) {
-                crawlingResultRepository.updateIdempotently(result, CrawlingResult.CREATED);
-            } else {
-                crawlingResultRepository.updateIdempotently(result, CrawlingResult.RUNNING);
-            }
+            int previousStatus = result.getStatus();
+            result.setStatus(CrawlingResult.SYSTEM_ERROR);
+            crawlingResultRepository.updateIdempotently(result, previousStatus);
             return AsyncResult.forExecutionException(e);
         }
     }
@@ -192,7 +194,7 @@ public class SpiderService {
     private static class CrawledData {
 
         @JSONField(name = "ep")
-        private String theme;
+        private String title;
         @JSONField(name = "to")
         private String receiver;
         @JSONField(name = "from")

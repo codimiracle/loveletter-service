@@ -22,6 +22,6 @@ public interface ThemeRepository {
     @Select("SELECT count(*) FROM love_theme WHERE runId = #{runId}")
     int countAll(@Param("runId") String runId);
 
-    @Insert("INSERT INTO love_theme (id, episode, subject, title, url, publishTime,runId) VALUES (#{theme.id}, #{theme.episode}, #{theme.subject}, #{theme.title}, #{theme.url}, #{theme.publishTime}, #{theme.runId})")
-    void insert(@Param("theme") Theme theme);
+    @Insert("INSERT INTO love_theme (id, episode, subject, title, url, publishTime,runId) VALUES (#{title.id}, #{title.episode}, #{title.subject}, #{title.title}, #{title.url}, #{title.publishTime}, #{title.runId})")
+    void insert(@Param("title") Theme theme);
 }
