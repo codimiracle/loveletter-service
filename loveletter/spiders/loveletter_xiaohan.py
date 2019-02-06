@@ -8,8 +8,8 @@ from loveletter.loaders import LoveLetterLoader, LoveThemeLoader
 
 class LoveLetterSpider(scrapy.Spider):
     name = 'loveletter-xiaohan'
-    wechat_key = 'af05bc32605f4a20012ba86a83be02eb21fb6eea48082d658d514198af9fb29288cb933a0e0d2e224f713bde3a6eb144c0ccc9d99cf869182e68e322bf1ebce851c49603cf11cfa427a09a4c5aad1896'
-    wechat_appmsg_token = '994_JSvAeGQ5iycaqwupf7gyA0qfiganSJVq-uXoMQ~~&x5=0'
+    wechat_key = '6d1e78dd2153a25082d38f2fbfbd097e0a7532fa8a60400ab11ead91eef6bc05c12ccb09a49befbf254a3c2e6b3d1b190c2670d2c73af33c0a104b78f52ff0c0ff802604af0b03cd273d03666547aef0'
+    wechat_appmsg_token = '994_p9KdAkZM2FDJu7sEKyzD3SE9T1weJADPi394yQ~~&x5=0'
     allowed_domains = ['mp.weixin.qq.com']
     start_urls = [
         # xiaohan wechat subscription json format home page.
